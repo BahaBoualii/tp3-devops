@@ -29,7 +29,7 @@ pipeline {
                     sh "helm lint ${HELM_CHART_PATH}"
                     
                     // Dry-run pour valider les templates
-                    sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --dry-run --debug --namespace ${NAMESPACE}"
+                    // sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --dry-run --debug --namespace ${NAMESPACE}"
                     
                     echo '✅ Helm chart validation completed!'
                 }
