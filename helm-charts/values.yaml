@@ -1,0 +1,31 @@
+replicaCount: 2
+
+image:
+  repository: bahabouali/my-app
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+  port: 8080
+  targetPort: 8080
+
+nameOverride: ""
+fullnameOverride: "my-app"
+
+labels:
+  app: my-app
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80

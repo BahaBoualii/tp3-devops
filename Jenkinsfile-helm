@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+    
+    environment {
+        HELM_RELEASE_NAME = 'my-app-release'
+        HELM_CHART_PATH = './helm-charts'
+        NAMESPACE = 'default'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    echo '📥 Checking out code from GitHub...'
+                    // Le checkout est automatique avec "Pipeline script from SCM"
+                }
+            }
+        }
+        
+        stage('Validate Helm Chart') {
+            steps {
+                script {
+                    echo '✅ Validating Helm chart...'
+                    
+                    // Vérifier que Helm est installé
+                    sh 'helm version'
+                    
+                    // Linter le chart
+                    sh "helm lint ${HELM_CHART_PATH}"
+                    
+                    // Dry-run pour valider les templates
+                    sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --dry-run --debug --namespace ${NAMESPACE}"
+                    
+                    echo '✅ Helm chart validation completed!'
+                }
+            }
+        }
+        
+        stage('Deploy with Helm') {
+            steps {
+                script {
+                    echo '☸️ Deploying to Kubernetes with Helm...'
+                    
+                    // Vérifier la connexion
+                    sh 'kubectl cluster-info'
+                    sh 'kubectl get nodes'
+                    
+                    // Vérifier si le release existe déjà
+                    def releaseExists = sh(
+                        script: "helm list -n ${NAMESPACE} | grep ${HELM_RELEASE_NAME} || true",
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (releaseExists) {
+                        echo "📦 Upgrading existing release: ${HELM_RELEASE_NAME}"
+                        sh "helm upgrade ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --wait --timeout 3m"
+                    } else {
+                        echo "📦 Installing new release: ${HELM_RELEASE_NAME}"
+                        sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --wait --timeout 3m"
+                    }
+                    
+                    echo '✅ Deployment completed!'
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo '🔍 Verifying deployment...'
+                    
+                    // Afficher le status du release
+                    sh "helm status ${HELM_RELEASE_NAME} -n ${NAMESPACE}"
+                    
+                    // Vérifier les pods et services
+                    sh 'kubectl get pods -l app=my-app'
+                    sh 'kubectl get svc my-app-service'
+                    
+                    echo '🌐 Application accessible via http://localhost:8080'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ Pipeline executed successfully!'
+            sh "helm list -n ${NAMESPACE}"
+            sh 'kubectl get all -l app=my-app'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+            sh "helm status ${HELM_RELEASE_NAME} -n ${NAMESPACE} || true"
+            sh 'kubectl describe pods -l app=my-app || true'
+            sh 'kubectl logs -l app=my-app --tail=50 || true'
+        }
+    }
+}
