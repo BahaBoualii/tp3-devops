@@ -53,10 +53,10 @@ pipeline {
                     
                     if (releaseExists) {
                         echo "📦 Upgrading existing release: ${HELM_RELEASE_NAME}"
-                        sh "helm upgrade ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --wait --timeout 3m"
+                        sh "helm upgrade ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --timeout 10m"
                     } else {
                         echo "📦 Installing new release: ${HELM_RELEASE_NAME}"
-                        sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --wait --timeout 3m"
+                        sh "helm install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH} --namespace ${NAMESPACE} --timeout 10m"
                     }
                     
                     echo '✅ Deployment completed!'
